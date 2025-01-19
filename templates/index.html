@@ -1,19 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warnik PID</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Form</title>
 </head>
 <body>
-    <h1>Tu będą wykresy</h1>
-    <script>
-        const T = {{ T }};
-        const Q = {{ Q }};
+    <h1>Formularz</h1>
+    <form method="POST">
+        {% for slider in sliders %}
+        <div>
+            <label for="{{ slider.name }}">{{slider.label}}</label>
+            <input type="range" id="{{ slider.name }}" name="{{ slider.name }}" min="{{slider.min}}" max="{{slider.max}}" value="{{slider.default}}">
+            <p>Wartość: <output id="{{ slider.name }}_value"></output></p>
+        </div>
+        {% endfor %}
+        <button type="submit">Wyślij</button>
+    </form>
 
-        console.log(T);
-        console.log(Q);
+    <script>
+        document.querySelectorAll('input[type="range"]').forEach(input => {
+            const output = document.querySelector(`#${input.id}_value`);
+            output.textContent = input.value;
+            input.addEventListener("input", (event) => {
+                output.textContent = event.target.value;
+            });
+        });
     </script>
 </body>
 </html>
