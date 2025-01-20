@@ -7,12 +7,16 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-    <h1>Tu będą wykresy</h1>
-    <script>
-        // const Q = {{ Q }};
+    <h1>Wykresy</h1>
 
-        console.log(T);
-        // console.log(Q);
-    </script>
+    <div>
+        <h2>Temperatura w czasie</h2>
+        {{ plot1 | safe }}
+    </div>
+
+    <div>
+        <h2>Moc grzałki w czasie</h2>
+        {{ plot2 | safe }}
+    </div>
 </body>
 </html>

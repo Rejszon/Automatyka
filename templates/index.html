@@ -3,19 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Form</title>
+    <title>Warnik PID</title>
+    <style>
+        .form-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .left-column, .right-column {
+            flex: 1;
+            padding: 10px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        p {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
     <h1>Formularz</h1>
     <form method="POST">
-        {% for slider in sliders %}
-        <div>
-            <label for="{{ slider.name }}">{{slider.label}}</label>
-            <input type="range" id="{{ slider.name }}" name="{{ slider.name }}" min="{{slider.min}}" max="{{slider.max}}" value="{{slider.default}}">
-            <p>Wartość: <output id="{{ slider.name }}_value"></output></p>
+        <div class="form-container">
+            <div class="left-column">
+                {% for slider in sliders %}
+                    {% if slider.name[:4] != 'repl' %}
+                        <div>
+                            <label for="{{ slider.name }}">{{ slider.label }}</label>
+                            <input type="range" id="{{ slider.name }}" name="{{ slider.name }}" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.default }}">
+                            <p>Wartość: <output id="{{ slider.name }}_value"></output></p>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="right-column">
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <label style="font-size: xx-large; text-align: center;" for="replenish"> Czy dolewamy?</label>
+                    <input style="margin-bottom: 20px;" type="checkbox" name="replenish" value="1">
+                </div>
+                {% for slider in sliders %}
+                    {% if slider.name[:4] == 'repl' %}
+                        <div>
+                            <label for="{{ slider.name }}">{{ slider.label }}</label>
+                            <input type="range" id="{{ slider.name }}" name="{{ slider.name }}" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.default }}">
+                            <p>Wartość: <output id="{{ slider.name }}_value"></output></p>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
         </div>
-        {% endfor %}
-        <button type="submit">Wyślij</button>
+        <button type="submit">Symuluj</button>
     </form>
 
     <script>
