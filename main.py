@@ -55,12 +55,13 @@ def index():
          # Wykres mocy grzałki od czasu
         fig2 = px.line(data, x='Czas [s]', y='Moc grzałki [W]', title='Moc grzałki w czasie')
         
-        hovertemplate = "Czas [s]: %{x}<br>Temperatura [°C]: %{y}<extra></extra>"
+        hovertemplateT = "Czas [s]: %{x}<br>Temperatura [°C]: %{y}<extra></extra>"
+        hovertemplateQ = "Czas [s]: %{x}<br>Moc grzałki [W]: %{y}<extra></extra>"
         if 'previous_plots' in session:
             for idx, prev_data in enumerate(session['previous_plots'],start=1):
                 prev_df = pd.DataFrame(prev_data)
-                fig1.add_scatter(x=prev_df['Czas [s]'], y=prev_df['Temperatura [°C]'], mode='lines',name=f"Symulacja -{idx}", hovertemplate=hovertemplate)
-                fig2.add_scatter(x=prev_df['Czas [s]'], y=prev_df['Moc grzałki [W]'], mode='lines',name=f"Symulacja -{idx}", hovertemplate=hovertemplate)
+                fig1.add_scatter(x=prev_df['Czas [s]'], y=prev_df['Temperatura [°C]'], mode='lines',name=f"Symulacja -{idx}", hovertemplate=hovertemplateT)
+                fig2.add_scatter(x=prev_df['Czas [s]'], y=prev_df['Moc grzałki [W]'], mode='lines',name=f"Symulacja -{idx}", hovertemplate=hovertemplateQ)
 
         fig1_temp = fig1.to_html(full_html=False)
         fig2_temp = fig2.to_html(full_html=False)
