@@ -5,10 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warnik PID</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4caf50;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <h1>Wykresy</h1>
-
+    <div style="display: flex; justify-content: space-between;">
+        <h1>Wykresy</h1>
+        <div>
+            <a href="/"><button>Formularz</button></a>
+            <a href="/clear"><button>Wyczyść</button></a>
+        </div>
+    </div>
     <div>
         <h2>Temperatura w czasie</h2>
         {{ plot1 | safe }}

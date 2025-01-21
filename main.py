@@ -1,8 +1,12 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
+from flask_session import Session
 import plotly.express as px
 import pandas as pd
 
 app = Flask(__name__)
+app.secret_key = 'very_secret_key' #potrzebne do stworzenia sesji, w naszym przypadku bezpieczeństwo nie jest istotne
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
 
 @app.route("/", methods = ['GET', 'POST'])
 def index():
@@ -10,15 +14,15 @@ def index():
         {"name": "initalTemperature", "min": 1, "max": 99, "default": 25, "label": 'Temperatura początkowa wody'},
         {"name": "initialMass", "min": 1, "max": 10, "default": 4, "label": 'Masa początkowa wody'},
         {"name": "setTemerature", "min": 10, "max": 99, "default": 80, "label": 'Ustalona temperatura podgrzewania wody'},
-        {"name": "simulationTime", "min": 60, "max": 6000, "default": 1000, "label": 'Czas symulacji wyrażony w sekundach'},
+        {"name": "simulationTime", "min": 60, "max": 10000, "default": 5000, "label": 'Czas symulacji wyrażony w sekundach'},
         {"name": "heater", "min": 1000, "max": 3000, "default": 2000, "label": 'Moc grzałki'},
         {"name": "outdoorTemperature", "min": 0, "max": 35, "default": 22, "label": 'Temperatura otoczenia'},
-        {"name": "KP", "min": 0, "max": 1000, "default": 300, "label": 'Człon proporcjonalny P'},
-        {"name": "KI", "min": 0, "max": 1000, "default": 500, "label": 'Człon całkujący I'},
-        {"name": "KD", "min": 0, "max": 1000, "default": 50, "label": 'Człon różniczkujący D'},
-        {"name": "replenishMass", "min": 0, "max": 9, "default": 50, "label": 'Masa dolanej wody'},
-        {"name": "replenishTime", "min": 1, "max": 1000, "default": 50, "label": 'Czas dolania'},
-        {"name": "replenishTemperature", "min": 1, "max": 99, "default": 50, "label": 'Temperatura dolanej wody'},
+        {"name": "KP", "min": 0, "max": 10000, "default": 5000, "label": 'Człon proporcjonalny P'},
+        {"name": "KI", "min": 0, "max": 50, "default": 5, "label": 'Człon całkujący I'},
+        {"name": "KD", "min": 0, "max": 100, "default": 15, "label": 'Człon różniczkujący D'},
+        {"name": "replenishMass", "min": 0, "max": 9, "default": 2, "label": 'Masa dolanej wody'},
+        {"name": "replenishTime", "min": 1, "max": 9999, "default": 1000, "label": 'Czas dolania'},
+        {"name": "replenishTemperature", "min": 1, "max": 99, "default": 25, "label": 'Temperatura dolanej wody'},
     ]
 
     if request.method == 'POST':
@@ -36,7 +40,8 @@ def index():
         processed_data.get('replenish',0),
         processed_data['replenishMass'],
         processed_data['replenishTime'],
-        processed_data['replenishTemperature'],)
+        processed_data['replenishTemperature'])
+
         #Stwórz wykresy
         time = list(range(processed_data['simulationTime'] + 1))
         data = pd.DataFrame({
@@ -47,11 +52,25 @@ def index():
 
         # Wykres temperatury od czasu
         fig1 = px.line(data, x='Czas [s]', y='Temperatura [°C]', title='Zmiana temperatury w czasie')
-        fig1_temp = fig1.to_html(full_html=False)
-
-        # Wykres mocy grzałki od czasu
+         # Wykres mocy grzałki od czasu
         fig2 = px.line(data, x='Czas [s]', y='Moc grzałki [W]', title='Moc grzałki w czasie')
+        
+        hovertemplate = "Czas [s]: %{x}<br>Temperatura [°C]: %{y}<extra></extra>"
+        if 'previous_plots' in session:
+            for idx, prev_data in enumerate(session['previous_plots'],start=1):
+                prev_df = pd.DataFrame(prev_data)
+                fig1.add_scatter(x=prev_df['Czas [s]'], y=prev_df['Temperatura [°C]'], mode='lines',name=f"Symulacja -{idx}", hovertemplate=hovertemplate)
+                fig2.add_scatter(x=prev_df['Czas [s]'], y=prev_df['Moc grzałki [W]'], mode='lines',name=f"Symulacja -{idx}", hovertemplate=hovertemplate)
+
+        fig1_temp = fig1.to_html(full_html=False)
         fig2_temp = fig2.to_html(full_html=False)
+       
+        current_data = data.to_dict(orient='list')
+        if 'previous_plots' not in session:
+            session['previous_plots'] = []
+        session['previous_plots'].insert(0,current_data)
+        if len(session['previous_plots']) > 2:
+            session['previous_plots'] = session['previous_plots'][:2]
 
         return render_template('result.html', plot1=fig1_temp, plot2=fig2_temp)
 
@@ -90,3 +109,8 @@ def simulate(simTime, initialTemp, currMass, setTemp, maxQ, outTemp, Kp, Ki, Kd 
         q.append(currQ)
         initialE = currE
     return temp,q
+
+@app.route('/clear')
+def clear_session():
+    session.pop('previous_plots', None)
+    return 'Dane wyczyszczone. Wróć do: <a href="/">formularza</a>.'
