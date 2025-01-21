@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, session
 from flask_session import Session
 import plotly.express as px
 import pandas as pd
+import math as ma
 
 app = Flask(__name__)
 app.secret_key = 'very_secret_key' #potrzebne do stworzenia sesji, w naszym przypadku bezpieczeństwo nie jest istotne
@@ -17,9 +18,9 @@ def index():
         {"name": "simulationTime", "min": 60, "max": 10000, "default": 5000, "label": 'Czas symulacji wyrażony w sekundach'},
         {"name": "heater", "min": 1000, "max": 3000, "default": 2000, "label": 'Moc grzałki'},
         {"name": "outdoorTemperature", "min": 0, "max": 35, "default": 22, "label": 'Temperatura otoczenia'},
-        {"name": "KP", "min": 0, "max": 10000, "default": 5000, "label": 'Człon proporcjonalny P'},
-        {"name": "KI", "min": 0, "max": 50, "default": 5, "label": 'Człon całkujący I'},
-        {"name": "KD", "min": 0, "max": 100, "default": 15, "label": 'Człon różniczkujący D'},
+        {"name": "KP", "min": 0, "max": 1000, "step":2, "default": 100, "label": 'Człon proporcjonalny P'},
+        {"name": "KI", "min": 0, "max": 0.2, "step":0.001, "default": 0.04, "label": 'Człon całkujący I'},
+        {"name": "KD", "min": 0, "max": 50, "step":1, "default": 20, "label": 'Człon różniczkujący D'},
         {"name": "replenishMass", "min": 0, "max": 9, "default": 2, "label": 'Masa dolanej wody'},
         {"name": "replenishTime", "min": 1, "max": 9999, "default": 1000, "label": 'Czas dolania'},
         {"name": "replenishTemperature", "min": 1, "max": 99, "default": 25, "label": 'Temperatura dolanej wody'},
@@ -27,7 +28,7 @@ def index():
 
     if request.method == 'POST':
         slider_values = request.form
-        processed_data = {key: int(value) for key, value in slider_values.items()}
+        processed_data = {key: float(value) for key, value in slider_values.items()}
         T, Q = simulate(processed_data['simulationTime'], 
         processed_data['initalTemperature'], 
         processed_data['initialMass'], 
@@ -43,7 +44,7 @@ def index():
         processed_data['replenishTemperature'])
 
         #Stwórz wykresy
-        time = list(range(processed_data['simulationTime'] + 1))
+        time = list(range(int(processed_data['simulationTime']) + 1))
         data = pd.DataFrame({
         'Czas [s]': time,
         'Temperatura [°C]': T,
@@ -87,7 +88,7 @@ def simulate(simTime, initialTemp, currMass, setTemp, maxQ, outTemp, Kp, Ki, Kd 
     initialE = setTemp - initialTemp
     integral = 0
 
-    for i in range(1, simTime+ 1):
+    for i in range(1, int(simTime)+1):
         #Obliczamy obecne e oraz temperature
         currTemp = temp[-1]
         currE = setTemp - currTemp
@@ -99,7 +100,7 @@ def simulate(simTime, initialTemp, currMass, setTemp, maxQ, outTemp, Kp, Ki, Kd 
 
         #Obliczenie tempratury (T[k])
         C = currMass * Cp
-        newTemp = currTemp + dt*((currQ / C) - (currTemp - outTemp)/(C * Rt)) 
+        newTemp = currTemp + dt*((currQ / C) - (currTemp - outTemp)/(C * Rt))
         
         if repl and i == replTime:
             currMass += replMass

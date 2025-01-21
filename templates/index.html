@@ -55,7 +55,7 @@
                     {% if slider.name[:4] != 'repl' %}
                         <div>
                             <label for="{{ slider.name }}">{{ slider.label }}</label>
-                            <input type="range" id="{{ slider.name }}" name="{{ slider.name }}" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.default }}">
+                            <input type="range" id="{{ slider.name }}" name="{{ slider.name }}" min="{{ slider.min }}" max="{{ slider.max }}" value="{{ slider.default }}" step="{{ slider.step }}">
                             <p>Wartość: <output id="{{ slider.name }}_value"></output></p>
                         </div>
                     {% endif %}
