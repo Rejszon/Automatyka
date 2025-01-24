@@ -40,6 +40,8 @@ def index():
         processed_data['replenishTime'],
         processed_data['replenishTemperature'])
 
+        T = list(map(int,T))
+
         #Stwórz wykresy
         time = list(range(int(5001)))
         data = pd.DataFrame({
