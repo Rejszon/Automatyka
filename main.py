@@ -12,12 +12,12 @@ Session(app)
 def index():
     sliders = [
         {"name": "initalTemperature", "min": 1, "max": 99, "default": 25, "label": 'Temperatura początkowa wody'},
-        {"name": "initialMass", "min": 1, "max": 7, "default": 4, "label": 'Objętość wody [l]'},
         {"name": "setTemerature", "min": 10, "max": 85, "default": 70, "label": 'Ustalona temperatura podgrzewania wody'},
         {"name": "outdoorTemperature", "min": 0, "max": 35, "default": 22, "label": 'Temperatura otoczenia'},
-        {"name": "KP", "min": 0, "max": 1000, "step":2, "default": 100, "label": 'Wzmocnienie Regulatora'},
-        {"name": "KI", "min": 0, "max": 0.2, "step":0.001, "default": 0.04, "label": 'Czas Zdwojenia'},
-        {"name": "KD", "min": 0, "max": 50, "step":1, "default": 20, "label": 'Czas wyprzedzenia'},
+        {"name": "KP", "min": 0, "max": 10, "step":1, "default": 5, "label": 'Wzmocnienie Regulatora'},
+        {"name": "KI", "min": 0, "max": 10, "step":0.01, "default": 5, "label": 'Czas Zdwojenia'},
+        {"name": "KD", "min": 0, "max": 10, "step":1, "default": 5, "label": 'Czas wyprzedzenia'},
+        {"name": "Td", "min": 0, "max": 1, "step":0.1, "default": 0.1, "label": 'Czas próbkowania'},
         {"name": "replenishMass", "min": 0, "max": 3, "default": 2, "label": 'Objętość dolewanej wody [l]'},
         {"name": "replenishTime", "min": 1, "max": 5000, "default": 1000, "label": 'Moment rozpoczęcia dolewania wody [s]'},
         {"name": "replenishTemperature", "min": 1, "max": 99, "default": 25, "label": 'Temperatura dolewanej wody'},
@@ -26,11 +26,11 @@ def index():
     if request.method == 'POST':
         slider_values = request.form
         processed_data = {key: float(value) for key, value in slider_values.items()}
-        T, Q = simulate(5000, 
+        T, Q = simulate(3000, 
         processed_data['initalTemperature'], 
-        processed_data['initialMass'], 
+        4, 
         processed_data['setTemerature'], 
-        2000,
+        4000,
         processed_data['outdoorTemperature'],
         processed_data['KP'],
         processed_data['KI'],
@@ -38,12 +38,13 @@ def index():
         processed_data.get('replenish',0),
         processed_data['replenishMass'],
         processed_data['replenishTime'],
-        processed_data['replenishTemperature'])
+        processed_data['replenishTemperature'],
+        processed_data['Td'])
 
-        T = list(map(int,T))
+        #T = list(map(int,T))
 
         #Stwórz wykresy
-        time = list(range(int(5001)))
+        time = list(range(int(3001)*10))
         data = pd.DataFrame({
         'Czas [s]': time,
         'Temperatura [°C]': T,
@@ -80,24 +81,23 @@ def index():
     return render_template('index.html', sliders=sliders)
 
 Cp = 4186 #ciepło właściwe płynu
-dt = 1 #krok czasowy pewnie zostawimy 1 na sztywno albo dodamy opcje wyboru
 Rt = 0.05 #Magic number który mówi o wymianie ciepła z otoczniem
 
-def simulate(simTime, initialTemp, currMass, setTemp, maxQ, outTemp, Kp, Ki, Kd ,repl, replMass, replTime, replTemp):
+def simulate(simTime, initialTemp, currMass, setTemp, maxQ, outTemp, Kp, Ki, Kd ,repl, replMass, replTime, replTemp, dt):
     temp = [initialTemp]
     q = [0]
     initialE = setTemp - initialTemp
     integral = 0
     addingWater = False
 
-    for i in range(1, int(simTime)+1):
+    for i in range(1, 10*(int(simTime)+1)):
         #Obliczamy obecne e oraz temperature
         currTemp = temp[-1]
         currE = setTemp - currTemp
         integral += currE * dt
-        derivative = (currE - initialE) / dt
+        derivative = (currE - initialE)
         #Regulator PID wzór
-        currQ = Kp * currE + Ki * integral + Kd * derivative
+        currQ = Kp *( currE + dt/Ki * integral + Kd/dt * derivative)
         currQ = max(0,min(currQ, maxQ))
 
         #Obliczenie tempratury (T[k])
@@ -107,9 +107,9 @@ def simulate(simTime, initialTemp, currMass, setTemp, maxQ, outTemp, Kp, Ki, Kd 
         if repl and i == replTime:
             addingWater = True
         if addingWater:
-            replMass -= 0.20 #Przyjmujemy że dolanie litra zajmuje 5 sekund więc co sekunde zmieniamy mase o 0.20 
-            currMass += 0.20
-            newTemp = (currMass - 0.20) / currMass * newTemp + (0.20 / currMass) * replTemp
+            replMass -= 0.02 #Przyjmujemy że dolanie litra zajmuje 5 sekund więc co sekunde zmieniamy mase o 0.20 
+            currMass += 0.02
+            newTemp = (currMass - 0.02) / currMass * newTemp + (0.02 / currMass) * replTemp
             C = currMass * Cp
             if replMass <= 0:
                 addingWater = False
